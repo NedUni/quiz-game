@@ -19,6 +19,7 @@ const A = {
   START_LOADING: 'START_LOADING',
   START_SUCCESS: 'START_SUCCESS',
   START_ERROR: 'START_ERROR',
+  SELECT: 'SELECT',
   ANSWER: 'ANSWER',
   SUBMIT_LOADING: 'SUBMIT_LOADING',
   SUBMIT_SUCCESS: 'SUBMIT_SUCCESS',
@@ -28,13 +29,16 @@ const A = {
 
 // ----- Initial state -----
 const initialState = {
-  status: 'idle', // 'idle' | 'loading' | 'active' | 'submitting' | 'complete' | 'error'
-  questions: [], // [{ _id, text, options, imageUrl }]
+  status: 'idle',
+  questions: [],
   sessionToken: null,
   currentIndex: 0,
-  // answers: Map-like object keyed by questionId so each question can only be answered once
-  answers: {}, // { [questionId]: selectedAnswer }
-  result: null, // populated on SUBMIT_SUCCESS
+  // Pending selection for the current question. Cleared on advance.
+  // null means "nothing selected yet" for the current question.
+  selection: null,
+  // Locked-in answers, keyed by questionId.
+  answers: {},
+  result: null,
   error: null,
 };
 
@@ -55,17 +59,32 @@ function reducer(state, action) {
     case A.START_ERROR:
       return { ...initialState, status: 'error', error: action.payload };
 
+    case A.SELECT: {
+      // Pure visual selection — doesn't lock. Allows the user to change their
+      // mind before clicking Next. Ignored if no question is currently active.
+      if (state.currentIndex >= state.questions.length) return state;
+      return { ...state, selection: action.payload.selectedAnswer };
+    }
+
     case A.ANSWER: {
-      const { questionId, selectedAnswer } = action.payload;
-      // Spec requirement: once submitted, an answer can't be changed.
-      // The reducer is the source of truth for this, not the UI.
-      if (state.answers[questionId] !== undefined) {
-        return state;
-      }
-      const newAnswers = { ...state.answers, [questionId]: selectedAnswer };
-      // Auto-advance to the next question (UI will trigger submit on the last one).
-      const nextIndex = state.currentIndex + 1;
-      return { ...state, answers: newAnswers, currentIndex: nextIndex };
+      // Commit the current pending selection. Advance to next question.
+      // Defensive: do nothing if there's no pending selection.
+      if (state.selection === null) return state;
+
+      const q = state.questions[state.currentIndex];
+      if (!q) return state;
+
+      // Spec: once submitted, an answer can't be changed. Reducer enforces
+      // this even though the UI also won't show a re-submit option.
+      if (state.answers[q._id] !== undefined) return state;
+
+      const newAnswers = { ...state.answers, [q._id]: state.selection };
+      return {
+        ...state,
+        answers: newAnswers,
+        currentIndex: state.currentIndex + 1,
+        selection: null, // ready for the next question
+      };
     }
 
     case A.SUBMIT_LOADING:
@@ -104,8 +123,12 @@ export function QuizProvider({ children }) {
       }
     },
 
-    answer(questionId, selectedAnswer) {
-      dispatch({ type: A.ANSWER, payload: { questionId, selectedAnswer } });
+    select(selectedAnswer) {
+      dispatch({ type: A.SELECT, payload: { selectedAnswer } });
+    },
+
+    commitAnswer() {
+      dispatch({ type: A.ANSWER });
     },
 
     async submitQuiz() {
