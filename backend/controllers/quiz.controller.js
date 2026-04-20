@@ -221,7 +221,55 @@ exports.history = async (req, res, next) => {
 
 exports.leaderboard = async (req, res, next) => {
   try {
-    res.status(501).json({ success: false, error: 'Not implemented' });
+    // Aggregation pipeline:
+    //  1. Group all scores by userId, keeping the max score and the
+    //     timestamp of when that score was first achieved.
+    //  2. Sort: highest score first, ties broken by who got there first.
+    //  3. Cap at top 50.
+    //  4. Look up the user document for each so we can return the username.
+    //  5. Reshape the output.
+    const top = await Score.aggregate([
+      {
+        $sort: { score: -1, createdAt: 1 },
+      },
+      {
+        $group: {
+          _id: '$userId',
+          bestScore: { $first: '$score' },       // first because we sorted by score desc
+          achievedAt: { $first: '$createdAt' },  // when they first hit that score
+        },
+      },
+      {
+        $sort: { bestScore: -1, achievedAt: 1 },
+      },
+      { $limit: 50 },
+      {
+        $lookup: {
+          from: 'users',          // collection name (lowercased plural of model)
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 0,
+          userId: '$_id',
+          username: '$user.username',
+          score: '$bestScore',
+          achievedAt: 1,
+        },
+      },
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        count: top.length,
+        leaderboard: top,
+      },
+    });
   } catch (err) {
     next(err);
   }
