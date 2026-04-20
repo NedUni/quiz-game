@@ -47,7 +47,7 @@ function renderByStatus(state, actions) {
     case 'submitting':
       return <LoadingScreen message="Submitting your answers…" />;
     case 'complete':
-      return <p>Quiz complete. Result UI coming in 7d.</p>;
+      return <CompleteScreen result={state.result} onPlayAgain={actions.reset} />;
     default:
       return <p>Unknown state.</p>;
   }
@@ -172,5 +172,97 @@ function QuestionCard({ question, selectedIndex, onSelect }) {
         })}
       </div>
     </div>
+  );
+}
+
+function CompleteScreen({ result, onPlayAgain }) {
+  if (!result) {
+    // Defensive: shouldn't happen, but if state.result is missing for any
+    // reason, show a graceful fallback rather than crash.
+    return <p>Result unavailable. Please try again.</p>;
+  }
+
+  const { score, total, answers } = result;
+  const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-semibold">
+          You scored {score} out of {total}
+        </h2>
+        <p className="text-slate-600 dark:text-slate-400">{pct}% correct</p>
+      </div>
+
+      <ol className="space-y-4">
+        {answers.map((a, i) => (
+          <ResultItem key={a.questionId} index={i + 1} answer={a} />
+        ))}
+      </ol>
+
+      <button
+        type="button"
+        onClick={onPlayAgain}
+        className="px-4 py-2 rounded bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+      >
+        Play again
+      </button>
+    </div>
+  );
+}
+
+function ResultItem({ index, answer }) {
+  const { text, options, correctIndex, selectedAnswer, isCorrect, imageUrl } = answer;
+
+  return (
+    <li className="border border-slate-200 dark:border-slate-700 rounded p-3">
+      <div className="flex items-start gap-2 mb-2">
+        <span
+          aria-hidden="true"
+          className={`inline-block w-5 text-center font-semibold ${
+            isCorrect ? 'text-green-600' : 'text-red-600'
+          }`}
+        >
+          {isCorrect ? '✓' : '✗'}
+        </span>
+        <p className="font-medium flex-1">
+          {index}. {text}
+        </p>
+      </div>
+
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt=""
+          className="max-h-32 rounded border border-slate-200 dark:border-slate-700 mb-2"
+        />
+      )}
+
+      <ul className="text-sm space-y-1 ml-7">
+        {options.map((opt, idx) => {
+          const isUserChoice = idx === selectedAnswer;
+          const isCorrectOption = idx === correctIndex;
+
+          let label = opt;
+          let className = 'text-slate-600 dark:text-slate-400';
+
+          if (isCorrectOption && isUserChoice) {
+            // They got it right
+            className = 'text-green-700 dark:text-green-400 font-medium';
+            label = `${opt} — your answer ✓`;
+          } else if (isCorrectOption) {
+            // The right answer (they didn't pick it)
+            className = 'text-green-700 dark:text-green-400 font-medium';
+            label = `${opt} — correct answer`;
+          } else if (isUserChoice) {
+            // They picked this and it's wrong
+            className = 'text-red-700 dark:text-red-400 line-through';
+            label = `${opt} — your answer ✗`;
+          }
+
+          return <li key={idx} className={className}>{label}</li>;
+        })}
+      </ul>
+    </li>
   );
 }

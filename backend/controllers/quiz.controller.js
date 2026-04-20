@@ -164,13 +164,28 @@ exports.submit = async (req, res, next) => {
     });
 
     // 7. Return result
+    // For the response, enrich each answer with full question details so
+    // the client can render a meaningful result screen without a follow-up call.
+    const detailedAnswers = scoredAnswers.map((a) => {
+      const q = byId.get(a.questionId.toString());
+      return {
+        questionId: a.questionId,
+        text: q.text,
+        options: q.options,
+        imageUrl: q.imageUrl,
+        correctIndex: q.correctIndex,
+        selectedAnswer: a.selectedAnswer,
+        isCorrect: a.isCorrect,
+      };
+    });
+
     return res.status(201).json({
       success: true,
       data: {
         scoreId: saved._id,
         score,
         total: scoredAnswers.length,
-        answers: scoredAnswers,
+        answers: detailedAnswers,
       },
     });
   } catch (err) {
