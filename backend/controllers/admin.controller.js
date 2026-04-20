@@ -43,7 +43,6 @@ exports.toggleActive = async (req, res, next) => {
 
 exports.bulkImport = async (req, res, next) => {
   try {
-    // TODO: validate JSON array, validate each question with Zod, insertMany
     res.status(501).json({ success: false, error: 'Not implemented' });
   } catch (err) {
     next(err);

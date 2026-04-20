@@ -1,6 +1,5 @@
 // middleware/auth.middleware.js
-// TODO (Step 3): Verify JWT, attach req.user = { id, username, role }.
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('../utils/jwt');
 
 module.exports = function requireAuth(req, res, next) {
   try {
@@ -11,7 +10,7 @@ module.exports = function requireAuth(req, res, next) {
       return res.status(401).json({ success: false, error: 'Authentication required' });
     }
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = verifyToken(token);
     req.user = { id: payload.sub, username: payload.username, role: payload.role };
     next();
   } catch (err) {
