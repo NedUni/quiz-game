@@ -182,7 +182,38 @@ exports.submit = async (req, res, next) => {
 
 exports.history = async (req, res, next) => {
   try {
-    res.status(501).json({ success: false, error: 'Not implemented' });
+    // Most recent 50 attempts for this user. Index { userId: 1, createdAt: -1 }
+    // makes this an indexed query.
+    const attempts = await Score.find({ userId: req.user.id })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      // Populate question text so the frontend can show "What is the capital of Australia?"
+      // instead of a raw ObjectId. Variation-aware: we also pull options + correctIndex
+      // so the user can see what they got wrong.
+      .populate('answers.questionId', 'text options correctIndex imageUrl');
+
+    return res.json({
+      success: true,
+      data: {
+        count: attempts.length,
+        attempts: attempts.map((a) => ({
+          _id: a._id,
+          score: a.score,
+          total: a.answers.length,
+          createdAt: a.createdAt,
+          answers: a.answers.map((ans) => {
+            const q = ans.questionId; // populated
+            return {
+              question: q
+                ? { _id: q._id, text: q.text, options: q.options, imageUrl: q.imageUrl, correctIndex: q.correctIndex }
+                : null, // question may have been deleted since
+              selectedAnswer: ans.selectedAnswer,
+              isCorrect: ans.isCorrect,
+            };
+          }),
+        })),
+      },
+    });
   } catch (err) {
     next(err);
   }
