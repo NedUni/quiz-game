@@ -94,7 +94,7 @@ All API responses use a consistent envelope:
 - 4 options per question, exactly one correct
 - +1 per correct answer, no negative marking
 - Final score saved with full answer breakdown (questionId + selectedAnswer + isCorrect)
-- Leaderboard: TODO document whether all attempts or best per user
+- Leaderboard: best score per user (descending), ties broken by who reached the score first. We chose best-per-user over all-attempts because it makes the leaderboard a measure of skill rather than persistence — a single user with many attempts can't dominate the top. Implemented as a MongoDB aggregation pipeline.
 
 ## Project Structure
 
