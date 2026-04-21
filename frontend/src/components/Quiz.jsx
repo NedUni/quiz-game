@@ -1,5 +1,6 @@
 // components/Quiz.jsx
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuiz } from '../context/QuizContext.jsx';
 
 export default function Quiz() {
@@ -200,13 +201,21 @@ function CompleteScreen({ result, onPlayAgain }) {
         ))}
       </ol>
 
-      <button
-        type="button"
-        onClick={onPlayAgain}
-        className="px-4 py-2 rounded bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-      >
-        Play again
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onPlayAgain}
+          className="px-4 py-2 rounded bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+        >
+          Play again
+        </button>
+        <Link
+          to="/leaderboard"
+          className="px-4 py-2 rounded border border-slate-300 dark:border-slate-600"
+        >
+          View leaderboard
+        </Link>
+      </div>
     </div>
   );
 }
