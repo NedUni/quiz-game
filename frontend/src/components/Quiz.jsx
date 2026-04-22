@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuiz } from '../context/QuizContext.jsx';
+import QuestionImage from './QuestionImage.jsx';
 
 export default function Quiz() {
   const { state, startQuiz, select, commitAnswer, submitQuiz, reset } = useQuiz();
@@ -142,13 +143,7 @@ function Progress({ current, total }) {
 function QuestionCard({ question, selectedIndex, onSelect }) {
   return (
     <div className="space-y-4">
-      {question.imageUrl && (
-        <img
-          src={question.imageUrl}
-          alt=""
-          className="max-h-64 rounded border border-slate-200 dark:border-slate-700"
-        />
-      )}
+      {question.imageUrl && <QuestionImage src={question.imageUrl} size="lg" />}
 
       <h2 className="text-lg font-medium">{question.text}</h2>
 
@@ -240,11 +235,9 @@ function ResultItem({ index, answer }) {
       </div>
 
       {imageUrl && (
-        <img
-          src={imageUrl}
-          alt=""
-          className="max-h-32 rounded border border-slate-200 dark:border-slate-700 mb-2"
-        />
+        <div className="mb-2">
+          <QuestionImage src={imageUrl} size="sm" />
+        </div>
       )}
 
       <ul className="text-sm space-y-1 ml-7">
