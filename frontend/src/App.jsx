@@ -7,6 +7,7 @@ import Quiz from './components/Quiz.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { useAuth } from './context/AuthContext.jsx';
+import History from './pages/History.jsx';
 
 function toggleDarkMode() {
   const root = document.documentElement;
@@ -28,6 +29,7 @@ export default function App() {
       <nav className="border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex gap-4 items-center">
         <Link to="/" className="font-semibold">Quiz Game</Link>
         <Link to="/quiz">Play</Link>
+        {user && <Link to="/history">History</Link>}
         <Link to="/leaderboard">Leaderboard</Link>
         {user?.role === 'admin' && <Link to="/admin">Admin</Link>}
 
@@ -75,6 +77,10 @@ export default function App() {
           <Route
             path="/admin"
             element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>}
+          />
+          <Route
+            path="/history"
+            element={<ProtectedRoute><History /></ProtectedRoute>}
           />
           <Route path="*" element={<p>Page not found.</p>} />
         </Routes>
